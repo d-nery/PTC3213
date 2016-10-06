@@ -26,23 +26,29 @@ d = b - 3e-2;
 g = 2e-2;
 h = (b-d)/2;
 
-%% Desenho da figura
-f1 = figure;
-rectangle('Position', [0 0 a b])
-rectangle('Position', [g h c d])
-axis([-0.01 0.12 -0.01 0.07]);
-axis equal;
-
-%%
-%delta
+%% Conversão do retângulo para grade de pontos
+% Delta para divisão da malha e precisão
 delta = 1e-4;
+
+% Distâncias convertidas para matriz de pontos
 am = floor(a/delta) + 1;
 bm = floor(b/delta) + 1;
+cm = floor(c/delta) + 1;
+dm = floor(d/delta) + 1;
 gm = floor(g/delta) + 1;
+hm = floor(h/delta) + 1;
+% Outras medidas
 gcm = floor((g+c)/delta) + 1;
 bhdm = floor((b-d-h)/delta) + 1;
 bhm = floor((b-h)/delta) + 1;
 
+%% Desenho da figura
+f1 = figure;
+rectangle('Position', [0 0 am bm]);
+rectangle('Position', [gm hm cm dm]);
+axis([-100 am+100 -100 bm+20]);
+axis equal;
+hold on;
 
 M = zeros(bm, am);
 for i = gm:gcm
@@ -55,7 +61,8 @@ for i = bhdm:bhm
 end
 
 i=0;
-while M(2,2) < 1e-10
+while M(2,am-1) < 1e-8
+% for j = 1:1000
    for l = 2:bhdm-1
        for c = 2:am-1
            M(l,c) = (M(l-1,c) + M(l+1, c) + M(l, c - 1) + M(l, c + 1))/4;
@@ -77,6 +84,23 @@ while M(2,2) < 1e-10
       end
    end
    i = i+1
+end
+
+for k = 10:10:100
+x = [];
+y = [];
+for i = 1:bm
+    for j = 1:am
+        if k-0.1 <= M(i,j) && M(i,j) <= k+0.1
+            x = [x j];
+            y = [y i];
+            %fprintf('==== OK\n');
+        end
+        %fprintf('%d, %d\n', i, j);
+    end
+end
+
+plot(x, y, '.m');
 end
 
 %%
