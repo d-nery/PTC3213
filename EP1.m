@@ -15,7 +15,7 @@ close all;
 
 %% Variaveis
 % Propriedades
-epsilon0 = 0; % TODO Mudar aqui
+epsilon0 = 8.85418782e-12; % TODO Mudar aqui
 epsilon = 1.9 * epsilon0;
 sigma = 3.2e-3; % S/m
 % Dimensoes (m)
@@ -28,7 +28,7 @@ h = (b-d)/2;
 
 %% Conversão do retângulo para grade de pontos
 % Delta para divisão da malha e precisão
-delta = 1e-4;
+delta = 8e-4;
 
 % Distâncias convertidas para matriz de pontos
 am = floor(a/delta) + 1;
@@ -42,65 +42,44 @@ gcm = floor((g+c)/delta) + 1;
 bhdm = floor((b-d-h)/delta) + 1;
 bhm = floor((b-h)/delta) + 1;
 
-%% Desenho da figura
-f1 = figure;
-rectangle('Position', [0 0 am bm]);
-rectangle('Position', [gm hm cm dm]);
-axis([-100 am+100 -100 bm+20]);
-axis equal;
-hold on;
-
 M = zeros(bm, am);
-for i = gm:gcm
-   M(bhdm, i) = 100;
-   M(bhm, i) = 100;
-end
-for i = bhdm:bhm
-   M(i, gm) = 100;
-   M(i, gcm) = 100;
-end
+M(bhdm:bhm, gm:gcm) = 100;
 
 i=0;
-while M(2,am-1) < 1e-8
-% for j = 1:1000
-   for l = 2:bhdm-1
+diff = 1;
+%%
+f = figure;
+colormap spring;
+axis equal;
+while diff >= 0.0001
+   diff = 0;
+   for l = 2:bm-1
        for c = 2:am-1
-           M(l,c) = (M(l-1,c) + M(l+1, c) + M(l, c - 1) + M(l, c + 1))/4;
+           if (c < gm || c > gcm || l > bhm || l < bhdm)
+               ant = M(l,c);
+               M(l,c) = (M(l-1,c) + M(l+1, c) + M(l, c - 1) + M(l, c + 1))/4;
+               if (abs(M(l,c) - ant) >= diff)
+                   diff = abs(M(l,c) - ant);
+               end
+           end
        end
    end
-   for l = bhdm:bhm
-       for c = 2:gm-1
-           M(l,c) = (M(l-1,c) + M(l+1, c) + M(l, c - 1) + M(l, c + 1))/4;
-       end
-   end
-   for l = bhdm:bhm
-       for c = gcm+1:am-1
-           M(l,c) = (M(l-1,c) + M(l+1, c) + M(l, c - 1) + M(l, c + 1))/4;
-       end
-   end
-   for l = bhm+1:bm-1
-      for c = 2:am-1
-          M(l,c) = (M(l-1,c) + M(l+1, c) + M(l, c - 1) + M(l, c + 1))/4;
-      end
-   end
-   i = i+1
+   %imagesc(M);
+   %contour(M, 0:10:100)
+   %pause(0.02);
+   %i = i+1
 end
 
-for k = 10:10:100
-x = [];
-y = [];
-for i = 1:bm
-    for j = 1:am
-        if k-0.1 <= M(i,j) && M(i,j) <= k+0.1
-            x = [x j];
-            y = [y i];
-            %fprintf('==== OK\n');
-        end
-        %fprintf('%d, %d\n', i, j);
-    end
-end
+%% Desenho da figura
+f1 = figure;
+hold on;
+colormap cool;
+%imagesc(M);
+contour(M, 0:10:100);
+axis([-10 150 -10 80]);
+axis equal;
+rectangle('Position', [0 0 am bm]);
+% rectangle('Position', [gm hm cm-1 dm]);
 
-plot(x, y, '.m');
-end
 
 %%
