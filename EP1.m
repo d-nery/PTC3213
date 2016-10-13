@@ -22,6 +22,8 @@ epsilon = 1.9 * epsilon0;  % permissividade elétrica no meio
 sigma  = 3.2e-3; % S/m
 sigma1 = 3.0e-3; % S/m para letra (e)
 
+potencial_interno = 100; % Potencial do condutor interno
+
 % Dimensoes (m)
 a = 11e-2;     
 b = 6e-2;      % Leb
@@ -52,13 +54,11 @@ bh  = round((b-h)/delta) + 1;
 V = zeros(b_matriz, a_matriz);
 V(bhd:bh, g_matriz:gc) = 100;
 
-i = 0;
 diff = 1;
 
 %% Matriz de potenciais
 % Itera ate a diferenca maxima entre dois pontos consecutivos
-% ser menor que 0.01
-i = 0;
+% ser menor que 0.001
 while diff >= 0.001
    diff = 0;
    for l = 2:b_matriz-1
@@ -73,7 +73,6 @@ while diff >= 0.001
            end
        end
    end
-   i = i + 1;
 end
 
 %% Campo Elétrico (Dual)
@@ -85,7 +84,6 @@ meio = (l+1)/2;
 E(meio, 1:g_matriz) = 100; % Lado "A"
 E(meio:bh-1, g_matriz+1:gc-1) = NaN; % Interior do quadrado
 
-k = 0;
 diff = 1;
 while diff > 0.001;
     diff = 0;
@@ -121,7 +119,6 @@ while diff > 0.001;
             end
         end
     end
-    k = k + 1;
 end
 
 % Rebate a matriz
@@ -129,10 +126,29 @@ E2 = flipud(E);
 E(1:meio,:) = E2(1:meio,:);
 clear E2;
 
-%% Calculo do campo eletrico, resistência e capacitância
-% CE = 
+%% Calculo da resistência e capacitância
+CE = 0;
+for i = 2 : l-1
+    CE = CE + V(i,2) + V(i,c-1);
+end
 
-%% Desenho dos quadrados curvilíneos
+for j = 2 : c - 1
+    CE = CE + V(2,j) + V(l-1,j);
+end
+
+I = sigma * e * CE;
+Q = epsilon * e * CE;
+
+% Resitencia e Capacitancia (d)
+R = 100/I;
+C = Q/100;
+
+% Resistencia do dual (e)
+Rdual = 1/(R * sigma1^2 * e^2);
+
+% Tubos de corrente para os quadrados curvilineos
+
+%% Mapa de quadrados curvilíneos (b)
 f1 = figure;
 f1.Name = 'Potencial Eletrico';
 hold on;
@@ -142,11 +158,10 @@ title('Quadrados Curvilíneos');
 
 % Cria as linhas equipotenciais espacadas em 10V
 contour(V, 0:10:100);
-contour(E, 0:2:100); % Esse intervalo aqui depende dos tubos de corrente la,tem que fazer a conta
+contour(E, 0:tc:100); % Esse intervalo aqui depende dos tubos de corrente la,tem que fazer a conta
 axis([-10 280 -10 150]);
 axis equal;
 
 % Desenho do condutor externo
 rectangle('Position', [0 0 a_matriz b_matriz]);
 
-%%
