@@ -18,15 +18,19 @@ close all;
 % Propriedades
 epsilon0 = 8.85418782e-12; % permissividade elétrica no vácuo
 epsilon = 1.9 * epsilon0;  % permissividade elétrica no meio
-sigma = 3.2e-3; % S/m
+
+sigma  = 3.2e-3; % S/m
+sigma1 = 3.0e-3; % S/m para letra (e)
 
 % Dimensoes (m)
-a = 11e-2;
-b = 6e-2;
-c = 3e-2;
-d = b - 3e-2;
-g = 2e-2;
+a = 11e-2;     
+b = 6e-2;      % Leb
+c = 3e-2;      % nusp7 = 1
+d = b - 3e-2;  % nusp6 = 6
+g = 2e-2;      % nusp5 = 0
 h = (b-d)/2;
+
+e = 1; % espessura
 
 % Delta para divisão da malha e precisão
 delta = 4e-4;
@@ -45,41 +49,42 @@ gc  = round((g+c)/delta) + 1;
 bhd = round((b-h-d)/delta) + 1;
 bh  = round((b-h)/delta) + 1;
 
-M = zeros(b_matriz, a_matriz);
-M(bhd:bh, g_matriz:gc) = 100;
+V = zeros(b_matriz, a_matriz);
+V(bhd:bh, g_matriz:gc) = 100;
 
-i=0;
+i = 0;
 diff = 1;
 
-%% 
-% Computa a matriz de potenciais
+%% Matriz de potenciais
 % Itera ate a diferenca maxima entre dois pontos consecutivos
 % ser menor que 0.01
+i = 0;
 while diff >= 0.001
    diff = 0;
    for l = 2:b_matriz-1
        for c = 2:a_matriz-1
            % Nao e necessario computar os pontos dentro do condutor interno
-           if (M(l,c) ~= 100)
-               ant = M(l,c);
-               M(l,c) = (M(l-1,c) + M(l+1, c) + M(l, c - 1) + M(l, c + 1))/4;
-               if (abs(M(l,c) - ant) >= diff)
-                   diff = abs(M(l,c) - ant);
+           if V(l,c) ~= 100
+               ant = V(l,c);
+               V(l,c) = (V(l-1,c) + V(l+1, c) + V(l, c - 1) + V(l, c + 1))/4;
+               if (abs(V(l,c) - ant) >= diff)
+                   diff = abs(V(l,c) - ant);
                end
            end
        end
    end
+   i = i + 1;
 end
 
 %% Campo Elétrico (Dual)
-%
-E = zeros(size(M));
+% Matriz para as linhas de campo
+E = zeros(size(V));
 [l, c] = size(E);
 meio = (l+1)/2;
 
-E(meio, 1:g_matriz) = 100;
-E(meio:bh-1, g_matriz+1:gc-1) = NaN;
-%%
+E(meio, 1:g_matriz) = 100; % Lado "A"
+E(meio:bh-1, g_matriz+1:gc-1) = NaN; % Interior do quadrado
+
 k = 0;
 diff = 1;
 while diff > 0.001;
@@ -98,6 +103,7 @@ while diff > 0.001;
                     E(i,j) = (2*E(i+1,j) + E(i, j-1) + E(i, j+1))/4;
                 elseif j == c && i < l
                     E(i,j) = (2*E(i,j-1) + E(i-1,j) + E(i+1,j))/4;
+                % Borda inferior
                 elseif i == l
                     if j == 1
                         E(i,j) = (2*E(i-1,j) + 2*E(i,j+1))/4;
@@ -115,22 +121,27 @@ while diff > 0.001;
             end
         end
     end
+    k = k + 1;
 end
 
+% Rebate a matriz
 E2 = flipud(E);
 E(1:meio,:) = E2(1:meio,:);
+clear E2;
 
-%% Desenho da figura
+%% Calculo do campo eletrico, resistência e capacitância
+% CE = 
+
+%% Desenho dos quadrados curvilíneos
 f1 = figure;
 f1.Name = 'Potencial Eletrico';
 hold on;
 colormap cool;
 colorbar;
 title('Quadrados Curvilíneos');
-%imagesc(M);
 
 % Cria as linhas equipotenciais espacadas em 10V
-contour(M, 0:10:100);
+contour(V, 0:10:100);
 contour(E, 0:2:100); % Esse intervalo aqui depende dos tubos de corrente la,tem que fazer a conta
 axis([-10 280 -10 150]);
 axis equal;
