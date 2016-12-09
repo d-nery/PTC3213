@@ -18,7 +18,7 @@ close all;
 % Propriedades
 mi0 = 4*pi*1e-7; % permeabilidade magnetica no vacuo
 
-potencial_interno = 100; % Potencial do condutor interno
+potencial_interno = 100e-6; % Potencial do condutor interno
 
 % Dimensoes (m)
 a = 11e-2;     
@@ -28,33 +28,40 @@ d = b - 3e-2;  % nusp6 = 6
 g = 2e-2;      % nusp5 = 0
 h = (b-d)/2;
 
-% Delta para divisï¿½o da malha e precisï¿½o
-delta = 1e-3;
+% Delta para divisao da malha e precisao
+delta = 4e-4;
 
-m = b/delta;          %numero de linhas
-n = a/delta;          %numero de colunas
-bve = g/delta;        %borda vertical da esquerda do condutor interno
-bvd = (g+c)/delta;    %borda vertical da direita do condutor interno
-bhs = (b-d-h)/delta;  %borda horizontal superior do condutor interno
-bhi = (b-h)/delta;    %borda horizontal inferior do condutor interno
+%% Conversao do retangulo para grade de pontos
+% Distancias convertidas para matriz de pontos
+a_matriz = round(a/delta) + 1;
+b_matriz = round(b/delta) + 1;
+c_matriz = round(c/delta) + 1;
+d_matriz = round(d/delta) + 1;
+g_matriz = round(g/delta) + 1;
+h_matriz = round(h/delta) + 1;
 
-A = zeros(m, n);
-A(bhs:bhi, bve:bvd) = 100;
+% Outras medidas
+gc  = round((g+c)/delta) + 1;
+bhd = round((b-h-d)/delta) + 1;
+bh  = round((b-h)/delta) + 1;
+
+A = zeros(b_matriz, a_matriz);
+A(bhd:bh, g_matriz:gc) = 100e-6;
 
 diff = 1;
 
 %% Matriz de potenciais
 % Itera ate a diferenca maxima entre dois pontos consecutivos
 % ser menor que 0.001
-while diff >= 0.001
+while diff >= 1e-10
    diff = 0;
-   for l = 2:m-1
-       for c = 2:n-1
+   for l = 2:(b_matriz-1)
+       for c = 2:(a_matriz-1)
            % Nao e necessario computar os pontos dentro do condutor interno
-           if A(l,c) ~= 100
+           if A(l,c) ~= 100e-6;
                ant = A(l,c);
                A(l,c) = (A(l-1,c) + A(l+1, c) + A(l, c - 1) + A(l, c + 1))/4;
-               if (abs(A(l,c) - ant) >= diff)
+               if (abs(A(l,c) - ant) > diff)
                    diff = abs(A(l,c) - ant);
                end
            end
@@ -62,15 +69,67 @@ while diff >= 0.001
    end
 end
 
-% Calculo do campo magnetico para uma superficie de interesse
-B = 0.25*(2*A(1,1) + A(2,1) + 2*A(m,1) + 2*A(m,n) + 2*A(1,n) + A(2,n) - A(2,2) - 2*A(m-1,2) - 2*A(m-1,n-1) - A(2,n-1));
 
-for i = 2:m-2
-    B = B + 0.5*(A(i,1) + A(i+1,1) + A(i,n) + A(i+1,n) - A(i,2) - A(i+1,2) - A(i,n-1) - A(i+1,n-1));
+%% Campo Magnetico (Dual)
+% Matriz para as linhas de campo
+B2 = zeros(size(A));
+[l, c] = size(B2);
+meio = (l+1)/2;
+
+B2(meio, 1:g_matriz) = 100e-6; % Lado "A"
+B2(meio:bh-1, g_matriz+1:gc-1) = NaN; % Interior do quadrado
+
+diff = 1;
+while diff > 0.001;
+    diff = 0;
+    for i = meio+1:l
+        for j = 1:c
+            if ~isnan(B2(i,j))
+                ant = B2(i,j);
+                if j == 1 && i < l
+                    B2(i,j) = (2*B2(i,j+1) + B2(i-1,j) + B2(i+1,j))/4;
+                elseif i < bh && j == g_matriz
+                    B2(i,j) = (2*B2(i,j-1) + B2(i-1,j) + B2(i+1,j))/4;
+                elseif i < bh && j == gc
+                    B2(i,j) = (2*B2(i,j+1) + B2(i-1,j) + B2(i+1,j))/4;
+                elseif i == bh && j > g_matriz && j < gc
+                    B2(i,j) = (2*B2(i+1,j) + B2(i, j-1) + B2(i, j+1))/4;
+                elseif j == c && i < l
+                    B2(i,j) = (2*B2(i,j-1) + B2(i-1,j) + B2(i+1,j))/4;
+                % Borda inferior
+                elseif i == l
+                    if j == 1
+                        B2(i,j) = (2*B2(i-1,j) + 2*B2(i,j+1))/4;
+                    elseif j == c
+                        B2(i,j) = (2*B2(i-1,j) + 2*B2(i,j-1))/4;
+                    else
+                        B2(i,j) = (2*B2(i-1,j) + B2(i, j-1) +B2(i, j+1))/4;
+                    end
+                else
+                    B2(i,j) = (B2(i+1,j) +B2(i-1,j) + B2(i,j+1) + B2(i,j-1))/4;
+                end
+                if (abs(B2(i,j) - ant) >= diff)
+                   diff = abs(B2(i,j) - ant);
+                end
+            end
+        end
+    end
 end
 
-for j=2:n-2
-    B = B + 0.5*(A(m,j) + A(m,j+1) + A(1,j) + A(1,j+1) - A(m-1,j) - A(2,j) - A(m-1,j+1) - A(2,j+1));
+% Rebate a matriz
+B3 = flipud(B2);
+B2(1:meio,:) = B3(1:meio,:);
+clear B3;
+
+% Calculo do campo magnetico para uma superficie de interesse
+B = 0.25*(2*A(1,1) + A(2,1) + 2*A(b_matriz,1) + 2*A(b_matriz,a_matriz) + 2*A(1,a_matriz) + A(2, a_matriz) - A(2,2) - 2*A(b_matriz-1,2) - 2*A(b_matriz-1,a_matriz-1) - A(2,a_matriz-1));
+
+for i = 2:b_matriz-2
+    B = B + 0.5*(A(i,1) + A(i+1,1) + A(i,a_matriz) + A(i+1,a_matriz) - A(i,2) - A(i+1,2) - A(i,a_matriz-1) - A(i+1,a_matriz-1));
+end
+
+for j=2:a_matriz-2
+    B = B + 0.5*(A(b_matriz,j) + A(b_matriz,j+1) + A(1,j) + A(1,j+1) - A(b_matriz-1,j) - A(2,j) - A(b_matriz-1,j+1) - A(2,j+1));
 end
 B=-B;
 
@@ -79,20 +138,40 @@ I = 1/mi0 * B;
 % Calculo da inutÃ¢ncia
 L = potencial_interno/I; 
 
-%% Mapa de quadrados curvilï¿½neos (b)
-f1 = figure;
-f1.Name = 'Potencial Eletrico';
-hold on;
-colormap cool;
-colorbar;
-title('Quadrados Curvilineos');
+%% Mapa de quadrados curvilï¿½neos (B)
 
-% Cria as linhas equipotenciais espacadas em 10V
-contour(A, 0:10:100);
-% contour(E, 0:tc:100); % Esse intervalo aqui depende dos tubos de corrente la,tem que fazer a conta
-axis([-10 280 -10 150]);
-axis equal;
+x = linspace(0,a,a_matriz);
+y = linspace(0,b,b_matriz);
 
-% Desenho do condutor externo
-rectangle('Position', [0 0 n m]);
+[X,Y] = meshgrid(x,y);
+
+figure
+
+B = contour(X,Y,A,0:10e-6:100e-6);
+%contour(B2, 0:tc:100e-6); % Esse intervalo aqui depende dos tubos de corrente la,tem que fazer a conta
+grid;
+title(['Linhas de campo magnético']);
+xlabel('X(m)');
+ylabel('Y(m)');
+clabel(B);
+
+%% ***Intesidade da Corrente Superficial na Parede Externa Inferior***
+
+%Dimensão de uma célula no eixo x
+xl = a/(a_matriz -1);
+for j = 1:a_matriz
+    
+    Hx(1,j) = ((A(end-1,j) - A(end,j))/xl)/mi0;
+end
+
+x = linspace(0,a,a_matriz);
+%Construção do gráfico da intensidade de corrente superficial em relação
+%ao eixo x
+figure;
+plot(x,Hx,'-b');
+grid;
+title('Intesidade da Corrente Superficial');
+xlabel('X(m)');
+ylabel('Jz(A/m^2)');
+
 
