@@ -38,8 +38,8 @@ bvd = (g+c)/delta;    %borda vertical da direita do condutor interno
 bhs = (b-d-h)/delta;  %borda horizontal superior do condutor interno
 bhi = (b-h)/delta;    %borda horizontal inferior do condutor interno
 
-V = zeros(m, n);
-V(bhs:bhi, bve:bvd) = 100;
+A = zeros(m, n);
+A(bhs:bhi, bve:bvd) = 100;
 
 diff = 1;
 
@@ -51,11 +51,11 @@ while diff >= 0.001
    for l = 2:m-1
        for c = 2:n-1
            % Nao e necessario computar os pontos dentro do condutor interno
-           if V(l,c) ~= 100
-               ant = V(l,c);
-               V(l,c) = (V(l-1,c) + V(l+1, c) + V(l, c - 1) + V(l, c + 1))/4;
-               if (abs(V(l,c) - ant) >= diff)
-                   diff = abs(V(l,c) - ant);
+           if A(l,c) ~= 100
+               ant = A(l,c);
+               A(l,c) = (A(l-1,c) + A(l+1, c) + A(l, c - 1) + A(l, c + 1))/4;
+               if (abs(A(l,c) - ant) >= diff)
+                   diff = abs(A(l,c) - ant);
                end
            end
        end
@@ -63,14 +63,14 @@ while diff >= 0.001
 end
 
 % Calculo do campo magnetico para uma superficie de interesse
-B = 0.25*(2*V(1,1) + V(2,1) + 2*V(m,1) + 2*V(m,n) + 2*V(1,n) + V(2,n) - V(2,2) - 2*V(m-1,2) - 2*V(m-1,n-1) - V(2,n-1));
+B = 0.25*(2*A(1,1) + A(2,1) + 2*A(m,1) + 2*A(m,n) + 2*A(1,n) + A(2,n) - A(2,2) - 2*A(m-1,2) - 2*A(m-1,n-1) - A(2,n-1));
 
 for i = 2:m-2
-    B = B + 0.5*(V(i,1) + V(i+1,1) + V(i,n) + V(i+1,n) - V(i,2) - V(i+1,2) - V(i,n-1) - V(i+1,n-1));
+    B = B + 0.5*(A(i,1) + A(i+1,1) + A(i,n) + A(i+1,n) - A(i,2) - A(i+1,2) - A(i,n-1) - A(i+1,n-1));
 end
 
 for j=2:n-2
-    B = B + 0.5*(V(m,j) + V(m,j+1) + V(1,j) + V(1,j+1) - V(m-1,j) - V(2,j) - V(m-1,j+1) - V(2,j+1));
+    B = B + 0.5*(A(m,j) + A(m,j+1) + A(1,j) + A(1,j+1) - A(m-1,j) - A(2,j) - A(m-1,j+1) - A(2,j+1));
 end
 B=-B;
 
@@ -88,7 +88,7 @@ colorbar;
 title('Quadrados Curvilineos');
 
 % Cria as linhas equipotenciais espacadas em 10V
-contour(V, 0:10:100);
+contour(A, 0:10:100);
 % contour(E, 0:tc:100); % Esse intervalo aqui depende dos tubos de corrente la,tem que fazer a conta
 axis([-10 280 -10 150]);
 axis equal;
