@@ -75,7 +75,7 @@ end
 B=-B;
 
 % Calculo da corrente (ou integral de linha em curva fechada do campo magnetico)
-I = i/mi0 * B;
+I = 1/mi0 * B;
 % Calculo da inutância
 L = potencial_interno/I; 
 
