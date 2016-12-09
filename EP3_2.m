@@ -18,7 +18,7 @@ close all;
 % Propriedades
 mi0 = 4*pi*1e-7; % permeabilidade magnetica no vacuo
 
-potencial_interno = 100; % Potencial do condutor interno
+potencial_interno = 100e-6; % Potencial do condutor interno
 
 % Dimensoes (m)
 a = 11e-2;     
@@ -28,18 +28,25 @@ d = b - 3e-2;  % nusp6 = 6
 g = 2e-2;      % nusp5 = 0
 h = (b-d)/2;
 
-% Delta para divis�o da malha e precis�o
-delta = 1e-3;
+% Delta para divisao da malha e precisao
+delta = 4e-4;
 
-m = b/delta;          %numero de linhas
-n = a/delta;          %numero de colunas
-bve = g/delta;        %borda vertical da esquerda do condutor interno
-bvd = (g+c)/delta;    %borda vertical da direita do condutor interno
-bhs = (b-d-h)/delta;  %borda horizontal superior do condutor interno
-bhi = (b-h)/delta;    %borda horizontal inferior do condutor interno
+%% Conversao do retangulo para grade de pontos
+% Distancias convertidas para matriz de pontos
+a_matriz = round(a/delta) + 1;
+b_matriz = round(b/delta) + 1;
+c_matriz = round(c/delta) + 1;
+d_matriz = round(d/delta) + 1;
+g_matriz = round(g/delta) + 1;
+h_matriz = round(h/delta) + 1;
 
-V = zeros(m, n);
-V(bhs:bhi, bve:bvd) = 100;
+% Outras medidas
+gc  = round((g+c)/delta) + 1;
+bhd = round((b-h-d)/delta) + 1;
+bh  = round((b-h)/delta) + 1;
+
+V = zeros(b_matriz, a_matriz);
+V(bhd:bh, g_matriz:gc) = 100;
 
 diff = 1;
 
@@ -48,8 +55,8 @@ diff = 1;
 % ser menor que 0.001
 while diff >= 0.001
    diff = 0;
-   for l = 2:m-1
-       for c = 2:n-1
+   for l = 2:b_matriz-1
+       for c = 2:a_matriz-1
            % Nao e necessario computar os pontos dentro do condutor interno
            if V(l,c) ~= 100
                ant = V(l,c);
@@ -61,6 +68,57 @@ while diff >= 0.001
        end
    end
 end
+
+%% Campo Magnetico (Dual)
+% Matriz para as linhas de campo
+B2 = zeros(size(V));
+[l, c] = size(B2);
+meio = (l+1)/2;
+
+B2(meio, 1:g_matriz) = 100; % Lado "A"
+B2(meio:bh-1, g_matriz+1:gc-1) = NaN; % Interior do quadrado
+
+diff = 1;
+while diff > 0.001;
+    diff = 0;
+    for i = meio+1:l
+        for j = 1:c
+            if ~isnan(B2(i,j))
+                ant = B2(i,j);
+                if j == 1 && i < l
+                    B2(i,j) = (2*B2(i,j+1) + B2(i-1,j) + B2(i+1,j))/4;
+                elseif i < bh && j == g_matriz
+                    B2(i,j) = (2*B2(i,j-1) + B2(i-1,j) + B2(i+1,j))/4;
+                elseif i < bh && j == gc
+                    B2(i,j) = (2*B2(i,j+1) + B2(i-1,j) + B2(i+1,j))/4;
+                elseif i == bh && j > g_matriz && j < gc
+                    B2(i,j) = (2*B2(i+1,j) + B2(i, j-1) + B2(i, j+1))/4;
+                elseif j == c && i < l
+                    B2(i,j) = (2*B2(i,j-1) + B2(i-1,j) + B2(i+1,j))/4;
+                % Borda inferior
+                elseif i == l
+                    if j == 1
+                        B2(i,j) = (2*B2(i-1,j) + 2*B2(i,j+1))/4;
+                    elseif j == c
+                        B2(i,j) = (2*B2(i-1,j) + 2*B2(i,j-1))/4;
+                    else
+                        B2(i,j) = (2*B2(i-1,j) + B2(i, j-1) +B2(i, j+1))/4;
+                    end
+                else
+                    B2(i,j) = (B2(i+1,j) +B2(i-1,j) + B2(i,j+1) + B2(i,j-1))/4;
+                end
+                if (abs(B2(i,j) - ant) >= diff)
+                   diff = abs(B2(i,j) - ant);
+                end
+            end
+        end
+    end
+end
+
+% Rebate a matriz
+B3 = flipud(B2);
+B2(1:meio,:) = B3(1:meio,:);
+clear B3;
 
 % Calculo do campo magnetico para uma superficie de interesse
 B = 0.25*(2*V(1,1) + V(2,1) + 2*V(m,1) + 2*V(m,n) + 2*V(1,n) + V(2,n) - V(2,2) - 2*V(m-1,2) - 2*V(m-1,n-1) - V(2,n-1));
@@ -89,10 +147,10 @@ title('Quadrados Curvilineos');
 
 % Cria as linhas equipotenciais espacadas em 10V
 contour(V, 0:10:100);
-% contour(E, 0:tc:100); % Esse intervalo aqui depende dos tubos de corrente la,tem que fazer a conta
+contour(B2, 0:tc:100); % Esse intervalo aqui depende dos tubos de corrente la,tem que fazer a conta
 axis([-10 280 -10 150]);
 axis equal;
 
 % Desenho do condutor externo
-rectangle('Position', [0 0 n m]);
+rectangle('Position', [0 0 a_matriz b_matriz]);
 

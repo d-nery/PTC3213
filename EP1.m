@@ -1,5 +1,5 @@
 %% PTC3213 - Eletromagnetismo
-% Exercício Programa 1
+% Exercï¿½cio Programa 1
 % 14 de outubro de 2016
 %
 % Alunos
@@ -10,14 +10,14 @@
 % Turma 3 - Professor Leb
 
 %%
-% Limpa o espaço de trabalho e fecha as figuras abertas
+% Limpa o espaï¿½o de trabalho e fecha as figuras abertas
 clear;
 close all;
 
 %% Constantes
 % Propriedades
-epsilon0 = 8.85418782e-12; % permissividade elétrica no vácuo
-epsilon = 1.9 * epsilon0;  % permissividade elétrica no meio
+epsilon0 = 8.85418782e-12; % permissividade elï¿½trica no vï¿½cuo
+epsilon = 1.9 * epsilon0;  % permissividade elï¿½trica no meio
 
 sigma  = 3.2e-3; % S/m
 sigma1 = 3.0e-3; % S/m para letra (e)
@@ -34,11 +34,11 @@ h = (b-d)/2;
 
 e = 1; % espessura
 
-% Delta para divisão da malha e precisão
+% Delta para divisï¿½o da malha e precisï¿½o
 delta = 4e-4;
 
-%% Conversão do retângulo para grade de pontos
-% Distâncias convertidas para matriz de pontos
+%% Conversï¿½o do retï¿½ngulo para grade de pontos
+% Distï¿½ncias convertidas para matriz de pontos
 a_matriz = round(a/delta) + 1;
 b_matriz = round(b/delta) + 1;
 c_matriz = round(c/delta) + 1;
@@ -75,7 +75,7 @@ while diff >= 0.001
    end
 end
 
-%% Campo Elétrico (Dual)
+%% Campo Elï¿½trico (Dual)
 % Matriz para as linhas de campo
 E = zeros(size(V));
 [l, c] = size(E);
@@ -126,7 +126,7 @@ E2 = flipud(E);
 E(1:meio,:) = E2(1:meio,:);
 clear E2;
 
-%% Calculo da resistência e capacitância
+%% Calculo da resistï¿½ncia e capacitï¿½ncia
 CE = 0;
 for i = 2 : l-1
     CE = CE + V(i,2) + V(i,c-1);
@@ -148,13 +148,13 @@ Rdual = 1/(R * sigma1^2 * e^2);
 
 % Tubos de corrente para os quadrados curvilineos
 
-%% Mapa de quadrados curvilíneos (b)
+%% Mapa de quadrados curvilï¿½neos (b)
 f1 = figure;
 f1.Name = 'Potencial Eletrico';
 hold on;
 colormap cool;
 colorbar;
-title('Quadrados Curvilíneos');
+title('Quadrados Curvilï¿½neos');
 
 % Cria as linhas equipotenciais espacadas em 10V
 contour(V, 0:10:100);
