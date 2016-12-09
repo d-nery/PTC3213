@@ -1,6 +1,6 @@
 % NUSP: 9350161 TURMA: LEB
 % C = 3, D = B - 3, G = 2, H = ( B - D )/2
-% Potencial vetor interno: 100 uWb/m² 
+% Potencial vetor interno: 100 uWb/mï¿½ 
 % Potencial vetor externo: 0 
 % Equipotenciais de 10uWb/m
 
@@ -22,19 +22,13 @@ bhi = (b-h)/delta;    %borda horizontal inferior do condutor interno
 %sigma1 = 0.003;       %valor da condutï¿½ncia no problema dual
 %epsilon = 1.9*8.854188E-12;
 %epsilon1 = 8.854188E-12;
-mi0 = 4*pi*1E-7; %permeabilidade magética no vácuo
+mi0 = 4*pi*1E-7; %permeabilidade magï¿½tica no vï¿½cuo
 potInter = 100;
 
 A = zeros(m,n);
-A1 = zeros(m,n);
-
 
 %impï¿½e os potenciais nas bordas do condutor interno
-for i = bhs : bhi
-    for j = bve : bvd
-        A(i,j) = potInter;
-    end
-end
+A(bhs : bhi,bve : bvd) = potInter;
 
 %Realiza as iteraï¿½oes ate a maior diferenï¿½a entre duas iteraï¿½oes ser menor que prec
 erro = 1;
@@ -54,10 +48,7 @@ while (erro > prec)
     end
 end
 
-A1 = round(A);  %escreve em outra matriz a matriz A com valores arredondados
-save('A1.txt','A1','-ascii');   %Salva A1 num arquivo texto
-
-%cï¿½lculo do campo magnético para uma superfície de interesse
+%cï¿½lculo do campo magnï¿½tico para uma superfï¿½cie de interesse
 B=0.25*(2*A(1,1) + A(2,1) + 2*A(m,1) + 2*A(m,n) + 2*A(1,n) + A(2,n) - A(2,2) - 2*A(m-1,2) - 2*A(m-1,n-1) - A(2,n-1));
 
 for i=2:m-2
@@ -69,11 +60,11 @@ for j=2:n-2
 end
 B=-B;
 
-%cálculo da corrente (ou integral de linha em curva fechada do campo
-%magnético
+%cï¿½lculo da corrente (ou integral de linha em curva fechada do campo
+%magnï¿½tico
 I = 1/mi0*B;
 
-L = potInter/I;    %cálculo da indutância
+L = potInter/I;    %cï¿½lculo da indutï¿½ncia
 
 % V2 = zeros(m,n);
 % 
